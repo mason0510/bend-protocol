@@ -33,15 +33,23 @@ contract NFTVault is INFTVault, Initializable, ContextUpgradeable, ERC721HolderU
     _receiptIdTracker.increment();
   }
 
-  function deposit(address[] calldata nftAssets, uint256[] calldata nftTokenIds) external override {
+  function deposit(
+    address[] calldata nftAssets,
+    uint256[] calldata nftTokenIds,
+    uint256 referralCode
+  ) external override {
     require(nftAssets.length == nftTokenIds.length, "NFTV: inconsistent params");
 
     for (uint256 i = 0; i < nftAssets.length; i++) {
-      _deposit(nftAssets[i], nftTokenIds[i]);
+      _deposit(nftAssets[i], nftTokenIds[i], referralCode);
     }
   }
 
-  function _deposit(address nftAsset, uint256 nftTokenId) internal {
+  function _deposit(
+    address nftAsset,
+    uint256 nftTokenId,
+    uint256 referralCode
+  ) internal {
     require(_nftToReceiptIds[nftAsset][nftTokenId] == 0, "NFTV: nft already exist");
 
     (address bNftProxy, ) = bnftRegistry.getBNFTAddresses(nftAsset);
@@ -65,7 +73,7 @@ contract NFTVault is INFTVault, Initializable, ContextUpgradeable, ERC721HolderU
     receiptData.nftAsset = nftAsset;
     receiptData.nftTokenId = nftTokenId;
 
-    emit Deposit(_msgSender(), nftAsset, nftTokenId, receiptId);
+    emit Deposit(_msgSender(), nftAsset, nftTokenId, receiptId, referralCode);
   }
 
   function withdraw(address[] calldata nftAssets, uint256[] calldata nftTokenIds) external override {

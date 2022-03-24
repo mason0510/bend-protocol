@@ -2,7 +2,13 @@
 pragma solidity 0.8.4;
 
 interface INFTVault {
-  event Deposit(address indexed user, address indexed nftAsset, uint256 nftTokenId, uint256 indexed receiptId);
+  event Deposit(
+    address indexed user,
+    address indexed nftAsset,
+    uint256 nftTokenId,
+    uint256 indexed receiptId,
+    uint256 referralCode
+  );
 
   event Withdraw(address indexed user, address indexed nftAsset, uint256 nftTokenId, uint256 indexed receiptId);
 
@@ -24,7 +30,11 @@ interface INFTVault {
     uint256 nftTokenId;
   }
 
-  function deposit(address[] calldata nftAssets, uint256[] calldata nftTokenIds) external;
+  function deposit(
+    address[] calldata nftAssets,
+    uint256[] calldata nftTokenIds,
+    uint256 referralCode
+  ) external;
 
   function withdraw(address[] calldata nftAssets, uint256[] calldata nftTokenIds) external;
 }
