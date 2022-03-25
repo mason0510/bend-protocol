@@ -162,6 +162,13 @@ interface ILendPool {
   );
 
   /**
+   * @dev Emitted when new interceptors are updated.
+   * @param interceptors The addresses of the interceptors
+   * @param flag The new flag, false or true
+   **/
+  event ApproveInterceptors(address[] interceptors, bool flag);
+
+  /**
    * @dev Deposits an `amount` of underlying asset into the reserve, receiving in return overlying bTokens.
    * - E.g. User deposits 100 USDC and gets in return 100 bUSDC
    * @param reserve The address of the underlying asset to deposit
@@ -437,4 +444,8 @@ interface ILendPool {
   function getMaxNumberOfReserves() external view returns (uint256);
 
   function getMaxNumberOfNfts() external view returns (uint256);
+
+  function approveInterceptors(address[] calldata interceptors, bool flag) external;
+
+  function getInterceptorFlag(address interceptor) external view returns (bool);
 }

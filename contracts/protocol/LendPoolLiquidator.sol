@@ -6,6 +6,8 @@ import {IDebtToken} from "../interfaces/IDebtToken.sol";
 import {ILendPoolLoan} from "../interfaces/ILendPoolLoan.sol";
 import {ILendPoolLiquidator} from "../interfaces/ILendPoolLiquidator.sol";
 import {INFTOracleGetter} from "../interfaces/INFTOracleGetter.sol";
+import {ILendPoolInterceptor} from "../interfaces/ILendPoolInterceptor.sol";
+
 import {Errors} from "../libraries/helpers/Errors.sol";
 import {WadRayMath} from "../libraries/math/WadRayMath.sol";
 import {GenericLogic} from "../libraries/logic/GenericLogic.sol";
@@ -17,6 +19,7 @@ import {ReserveConfiguration} from "../libraries/configuration/ReserveConfigurat
 import {NftConfiguration} from "../libraries/configuration/NftConfiguration.sol";
 import {DataTypes} from "../libraries/types/DataTypes.sol";
 import {LendPoolStorage} from "./LendPoolStorage.sol";
+import {LendPoolStorageExt} from "./LendPoolStorageExt.sol";
 
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -35,7 +38,14 @@ import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Cont
  * is the same as the LendPool, to have compatible storage layouts
  * @author Bend
  **/
-contract LendPoolLiquidator is Initializable, ILendPoolLiquidator, LendPoolStorage, ContextUpgradeable {
+// !!! For Upgradable: DO NOT ADJUST Inheritance Order !!!
+contract LendPoolLiquidator is
+  Initializable,
+  ILendPoolLiquidator,
+  LendPoolStorage,
+  ContextUpgradeable,
+  LendPoolStorageExt
+{
   using WadRayMath for uint256;
   using PercentageMath for uint256;
   using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -53,6 +63,7 @@ contract LendPoolLiquidator is Initializable, ILendPoolLiquidator, LendPoolStora
     uint256 borrowAmount;
     uint256 auctionEndTimestamp;
     uint256 minBidDelta;
+    bool preCheckResult;
   }
 
   /**
@@ -103,6 +114,13 @@ contract LendPoolLiquidator is Initializable, ILendPoolLiquidator, LendPoolStora
 
     // first time bid need to burn debt tokens and transfer reserve to bTokens
     if (loanData.state == DataTypes.LoanState.Active) {
+      // Let interceptor check whether this loan can be auctioned or not auctioned
+      if (_interceptors[loanData.borrower]) {
+        ILendPoolInterceptor interceptor = ILendPoolInterceptor(loanData.borrower);
+        vars.preCheckResult = interceptor.preCheckAuction(nftAsset, nftTokenId, bidPrice, onBehalfOf);
+        require(vars.preCheckResult == true, Errors.LP_INTERCEPTOR_REJECT_IN_PRECHECK);
+      }
+
       // loan's accumulated debt must exceed threshold (heath factor below 1.0)
       require(vars.borrowAmount > vars.thresholdPrice, Errors.LP_BORROW_NOT_EXCEED_LIQUIDATION_THRESHOLD);
 

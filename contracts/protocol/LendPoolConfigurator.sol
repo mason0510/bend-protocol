@@ -443,6 +443,16 @@ contract LendPoolConfigurator is Initializable, ILendPoolConfigurator {
     cachedPool.setPause(val);
   }
 
+  function enableInterceptors(address[] calldata interceptors) external onlyPoolAdmin {
+    ILendPool cachedPool = _getLendPool();
+    cachedPool.approveInterceptors(interceptors, true);
+  }
+
+  function disableInterceptors(address[] calldata interceptors) external onlyPoolAdmin {
+    ILendPool cachedPool = _getLendPool();
+    cachedPool.approveInterceptors(interceptors, false);
+  }
+
   function getTokenImplementation(address proxyAddress) external view onlyPoolAdmin returns (address) {
     BendUpgradeableProxy proxy = BendUpgradeableProxy(payable(proxyAddress));
     return proxy.getImplementation();

@@ -19,6 +19,7 @@ import {ReserveConfiguration} from "../libraries/configuration/ReserveConfigurat
 import {NftConfiguration} from "../libraries/configuration/NftConfiguration.sol";
 import {DataTypes} from "../libraries/types/DataTypes.sol";
 import {LendPoolStorage} from "./LendPoolStorage.sol";
+import {LendPoolStorageExt} from "./LendPoolStorageExt.sol";
 
 import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
@@ -43,7 +44,15 @@ import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Cont
  *   LendPoolAddressesProvider
  * @author Bend
  **/
-contract LendPool is Initializable, ILendPool, LendPoolStorage, ContextUpgradeable, IERC721ReceiverUpgradeable {
+// !!! For Upgradable: DO NOT ADJUST Inheritance Order !!!
+contract LendPool is
+  Initializable,
+  ILendPool,
+  LendPoolStorage,
+  ContextUpgradeable,
+  IERC721ReceiverUpgradeable,
+  LendPoolStorageExt
+{
   using WadRayMath for uint256;
   using PercentageMath for uint256;
   using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -876,6 +885,19 @@ contract LendPool is Initializable, ILendPool, LendPoolStorage, ContextUpgradeab
    **/
   function setNftConfiguration(address asset, uint256 configuration) external override onlyLendPoolConfigurator {
     _nfts[asset].configuration.data = configuration;
+  }
+
+  function approveInterceptors(address[] calldata interceptors, bool flag) external override onlyLendPoolConfigurator {
+    for (uint256 i = 0; i < interceptors.length; i++) {
+      require(AddressUpgradeable.isContract(interceptors[i]), Errors.LP_NOT_CONTRACT);
+      _interceptors[interceptors[i]] = flag;
+    }
+
+    emit ApproveInterceptors(interceptors, flag);
+  }
+
+  function getInterceptorFlag(address interceptor) external view override returns (bool) {
+    return _interceptors[interceptor];
   }
 
   function _addReserveToList(address asset) internal {
