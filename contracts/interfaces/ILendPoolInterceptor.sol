@@ -8,10 +8,41 @@ pragma solidity 0.8.4;
  * @dev implement this interface to develop a interceptor-compatible contract
  **/
 interface ILendPoolInterceptor {
-  function preCheckAuction(
+  function preHandleAuction(
     address nftAsset,
     uint256 nftTokenId,
     uint256 bidPrice,
     address onBehalfOf
+  ) external returns (bool);
+
+  function postHandleAuction(
+    address nftAsset,
+    uint256 nftTokenId,
+    uint256 bidPrice,
+    address onBehalfOf
+  ) external returns (bool);
+
+  function preHandleRedeem(
+    address nftAsset,
+    uint256 nftTokenId,
+    uint256 amount
+  ) external returns (bool);
+
+  function postHandleRedeem(
+    address nftAsset,
+    uint256 nftTokenId,
+    uint256 amount
+  ) external returns (bool);
+
+  function preHandleLiquidate(
+    address nftAsset,
+    uint256 nftTokenId,
+    uint256 amount
+  ) external returns (bool);
+
+  function postHandleLiquidate(
+    address nftAsset,
+    uint256 nftTokenId,
+    uint256 amount
   ) external returns (bool);
 }

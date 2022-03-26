@@ -63,7 +63,8 @@ contract LendPoolLiquidator is
     uint256 borrowAmount;
     uint256 auctionEndTimestamp;
     uint256 minBidDelta;
-    bool preCheckResult;
+    bool preHandleResult;
+    bool postHandleResult;
   }
 
   /**
@@ -114,11 +115,11 @@ contract LendPoolLiquidator is
 
     // first time bid need to burn debt tokens and transfer reserve to bTokens
     if (loanData.state == DataTypes.LoanState.Active) {
-      // Let interceptor check whether this loan can be auctioned or not auctioned
+      // Let interceptor pre handle whether this loan can be auctioned or not auctioned
       if (_interceptors[loanData.borrower]) {
         ILendPoolInterceptor interceptor = ILendPoolInterceptor(loanData.borrower);
-        vars.preCheckResult = interceptor.preCheckAuction(nftAsset, nftTokenId, bidPrice, onBehalfOf);
-        require(vars.preCheckResult == true, Errors.LP_INTERCEPTOR_REJECT_IN_PRECHECK);
+        vars.preHandleResult = interceptor.preHandleAuction(nftAsset, nftTokenId, bidPrice, onBehalfOf);
+        require(vars.preHandleResult == true, Errors.LP_INTERCEPTOR_FAILED_IN_PREHANDLE);
       }
 
       // loan's accumulated debt must exceed threshold (heath factor below 1.0)
@@ -161,6 +162,13 @@ contract LendPoolLiquidator is
     // update interest rate according latest borrow amount (utilizaton)
     reserveData.updateInterestRates(loanData.reserveAsset, reserveData.bTokenAddress, 0, 0);
 
+    // Let interceptor post handle when this loan has been auctioned
+    if (_interceptors[loanData.borrower]) {
+      ILendPoolInterceptor interceptor = ILendPoolInterceptor(loanData.borrower);
+      vars.postHandleResult = interceptor.postHandleAuction(nftAsset, nftTokenId, bidPrice, onBehalfOf);
+      require(vars.postHandleResult == true, Errors.LP_INTERCEPTOR_FAILED_IN_POSTHANDLE);
+    }
+
     emit Auction(
       vars.initiator,
       loanData.reserveAsset,
@@ -183,6 +191,8 @@ contract LendPoolLiquidator is
     uint256 maxRepayAmount;
     uint256 bidFine;
     uint256 redeemEndTimestamp;
+    bool preHandleResult;
+    bool postHandleResult;
   }
 
   /**
@@ -219,6 +229,13 @@ contract LendPoolLiquidator is
 
     // update state MUST BEFORE get borrow amount which is depent on latest borrow index
     reserveData.updateState();
+
+    // Let interceptor post handle before loan has been redeemed
+    if (_interceptors[loanData.borrower]) {
+      ILendPoolInterceptor interceptor = ILendPoolInterceptor(loanData.borrower);
+      vars.preHandleResult = interceptor.preHandleRedeem(nftAsset, nftTokenId, amount);
+      require(vars.preHandleResult == true, Errors.LP_INTERCEPTOR_FAILED_IN_PREHANDLE);
+    }
 
     (vars.borrowAmount, , ) = GenericLogic.calculateLoanLiquidatePrice(
       vars.loanId,
@@ -270,6 +287,13 @@ contract LendPoolLiquidator is
       IERC20Upgradeable(loanData.reserveAsset).safeTransferFrom(vars.initiator, loanData.bidderAddress, vars.bidFine);
     }
 
+    // Let interceptor post handle before loan has been redeemed
+    if (_interceptors[loanData.borrower]) {
+      ILendPoolInterceptor interceptor = ILendPoolInterceptor(loanData.borrower);
+      vars.postHandleResult = interceptor.postHandleRedeem(nftAsset, nftTokenId, amount);
+      require(vars.postHandleResult == true, Errors.LP_INTERCEPTOR_FAILED_IN_POSTHANDLE);
+    }
+
     emit Redeem(
       vars.initiator,
       loanData.reserveAsset,
@@ -292,6 +316,8 @@ contract LendPoolLiquidator is
     uint256 extraDebtAmount;
     uint256 remainAmount;
     uint256 auctionEndTimestamp;
+    bool preHandleResult;
+    bool postHandleResult;
   }
 
   /**
@@ -326,6 +352,13 @@ contract LendPoolLiquidator is
 
     // update state MUST BEFORE get borrow amount which is depent on latest borrow index
     reserveData.updateState();
+
+    // Let interceptor post handle before loan has been liquidated
+    if (_interceptors[loanData.borrower]) {
+      ILendPoolInterceptor interceptor = ILendPoolInterceptor(loanData.borrower);
+      vars.preHandleResult = interceptor.preHandleLiquidate(nftAsset, nftTokenId, amount);
+      require(vars.preHandleResult == true, Errors.LP_INTERCEPTOR_FAILED_IN_PREHANDLE);
+    }
 
     (vars.borrowAmount, , ) = GenericLogic.calculateLoanLiquidatePrice(
       vars.loanId,
@@ -380,6 +413,13 @@ contract LendPoolLiquidator is
 
     // transfer erc721 to bidder
     IERC721Upgradeable(loanData.nftAsset).safeTransferFrom(address(this), loanData.bidderAddress, nftTokenId);
+
+    // Let interceptor post handle after loan has been liquidated
+    if (_interceptors[loanData.borrower]) {
+      ILendPoolInterceptor interceptor = ILendPoolInterceptor(loanData.borrower);
+      vars.postHandleResult = interceptor.postHandleLiquidate(nftAsset, nftTokenId, amount);
+      require(vars.postHandleResult == true, Errors.LP_INTERCEPTOR_FAILED_IN_POSTHANDLE);
+    }
 
     emit Liquidate(
       vars.initiator,

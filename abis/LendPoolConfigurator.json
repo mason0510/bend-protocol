@@ -581,12 +581,38 @@
   {
     "inputs": [
       {
+        "internalType": "address[]",
+        "name": "interceptors",
+        "type": "address[]"
+      }
+    ],
+    "name": "disableInterceptors",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "asset",
         "type": "address"
       }
     ],
     "name": "enableBorrowingOnReserve",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "interceptors",
+        "type": "address[]"
+      }
+    ],
+    "name": "enableInterceptors",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
