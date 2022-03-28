@@ -61,6 +61,27 @@ contract LendPool is
   using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
   using NftConfiguration for DataTypes.NftConfigurationMap;
 
+  /**
+   * @dev Prevents a contract from calling itself, directly or indirectly.
+   * Calling a `nonReentrant` function from another `nonReentrant`
+   * function is not supported. It is possible to prevent this from happening
+   * by making the `nonReentrant` function external, and making it call a
+   * `private` function that does the actual work.
+   */
+  modifier nonReentrant() {
+    // On the first call to nonReentrant, _notEntered will be true
+    require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+
+    // Any calls to nonReentrant after this point will fail
+    _status = _ENTERED;
+
+    _;
+
+    // By storing the original value once again, a refund is triggered (see
+    // https://eips.ethereum.org/EIPS/eip-2200)
+    _status = _NOT_ENTERED;
+  }
+
   modifier whenNotPaused() {
     _whenNotPaused();
     _;
@@ -109,7 +130,7 @@ contract LendPool is
     uint256 amount,
     address onBehalfOf,
     uint16 referralCode
-  ) external override whenNotPaused {
+  ) external override nonReentrant whenNotPaused {
     require(onBehalfOf != address(0), Errors.VL_INVALID_ONBEHALFOF_ADDRESS);
 
     DataTypes.ReserveData storage reserve = _reserves[asset];
@@ -143,7 +164,7 @@ contract LendPool is
     address asset,
     uint256 amount,
     address to
-  ) external override whenNotPaused returns (uint256) {
+  ) external override nonReentrant whenNotPaused returns (uint256) {
     require(to != address(0), Errors.VL_INVALID_TARGET_ADDRESS);
 
     DataTypes.ReserveData storage reserve = _reserves[asset];
@@ -202,7 +223,7 @@ contract LendPool is
     uint256 nftTokenId,
     address onBehalfOf,
     uint16 referralCode
-  ) external override whenNotPaused {
+  ) external override nonReentrant whenNotPaused {
     require(onBehalfOf != address(0), Errors.VL_INVALID_ONBEHALFOF_ADDRESS);
 
     ExecuteBorrowLocalVars memory vars;
@@ -298,7 +319,7 @@ contract LendPool is
     address nftAsset,
     uint256 nftTokenId,
     uint256 amount
-  ) external override whenNotPaused returns (uint256, bool) {
+  ) external override nonReentrant whenNotPaused returns (uint256, bool) {
     RepayLocalVars memory vars;
     vars.initiator = _msgSender();
 
@@ -389,7 +410,7 @@ contract LendPool is
     uint256 nftTokenId,
     uint256 bidPrice,
     address onBehalfOf
-  ) external override whenNotPaused {
+  ) external override nonReentrant whenNotPaused {
     address poolLiquidator = _addressesProvider.getLendPoolLiquidator();
 
     //solium-disable-next-line
@@ -411,7 +432,7 @@ contract LendPool is
     address nftAsset,
     uint256 nftTokenId,
     uint256 amount
-  ) external override whenNotPaused returns (uint256) {
+  ) external override nonReentrant whenNotPaused returns (uint256) {
     address poolLiquidator = _addressesProvider.getLendPoolLiquidator();
 
     //solium-disable-next-line
@@ -437,7 +458,7 @@ contract LendPool is
     address nftAsset,
     uint256 nftTokenId,
     uint256 amount
-  ) external override whenNotPaused returns (uint256) {
+  ) external override nonReentrant whenNotPaused returns (uint256) {
     address poolLiquidator = _addressesProvider.getLendPoolLiquidator();
 
     //solium-disable-next-line
